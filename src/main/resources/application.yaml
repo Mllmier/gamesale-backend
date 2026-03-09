@@ -1,3 +1,17 @@
 spring:
   application:
     name: gamesales
+
+  datasource:
+    url: jdbc:postgresql://ep-aged-boat-ai36s97q-pooler.c-4.us-east-1.aws.neon.tech:5432/neondb?sslmode=require&channelBinding=require
+    username: neondb_owner
+    password: npg_JrXw1ZjbUY4i
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
