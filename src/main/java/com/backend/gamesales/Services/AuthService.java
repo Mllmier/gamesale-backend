@@ -2,6 +2,7 @@ package com.backend.gamesales.Services;
 
 
 import com.backend.gamesales.Dto.RegisterRequest;
+import com.backend.gamesales.Model.Profile;
 import com.backend.gamesales.Model.Role;
 import com.backend.gamesales.Model.Users;
 import com.backend.gamesales.Repository.UsersRepository;
@@ -38,12 +39,15 @@ public class AuthService {
             }
             Users users=new Users();
             users.setName(request.getName());
-            users.setLastname(request.getLastName());
             users.setBirthday(request.getBirthday());
             users.setEmail(request.getEmail());
             users.setPassword(passwordEncoder.encode(request.getPassword()));
             users.setRole(Role.CUSTOMER);
 
+            Profile profile = new Profile();
+            profile.setFirstName(request.getName());
+            profile.setLastName(request.getLastName());
+            users.setProfile(profile);
             Users savedUser=usersRepository.save(users);
 
             return  savedUser;

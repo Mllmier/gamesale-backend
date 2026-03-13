@@ -17,7 +17,6 @@ public interface UsersRepository extends JpaRepository<Users,Long>  {
     boolean existsByEmail(String email);
     boolean existsByRole(Role rol);
 
-
     @Modifying
     @Transactional
     @Query("UPDATE Users u SET u.password = :password WHERE u.email = :email")

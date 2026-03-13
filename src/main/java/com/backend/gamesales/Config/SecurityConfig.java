@@ -32,6 +32,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/seller/**").permitAll()
+                        .requestMatchers("/api/game/**").permitAll()
                         .requestMatchers(
                                 "/forgot-password/verify-mail/**",
                                 "/forgot-password/verify-otp/**",

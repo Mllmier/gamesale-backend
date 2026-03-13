@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDate;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
@@ -16,7 +15,7 @@ import java.util.GregorianCalendar;
 public class Admin {
     @Bean
     CommandLineRunner initAdmin(UsersRepository usersRepository,
-                                PasswordEncoder passwordEncoder) {
+                             PasswordEncoder passwordEncoder) {
 
         return args -> {
 
@@ -25,8 +24,6 @@ public class Admin {
             if (!adminExists) {
 
                 Users admin = new Users();
-                admin.setName("Administrador");
-                admin.setLastname("Principal");
                 admin.setEmail("admin@gmail.com");
                 admin.setPassword(passwordEncoder.encode("admin123"));
                 admin.setRole(Role.ADMINISTRATOR);
