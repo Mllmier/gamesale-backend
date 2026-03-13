@@ -3,8 +3,10 @@ package com.backend.gamesales.Controller;
 import com.backend.gamesales.Dto.LoginRequest;
 import com.backend.gamesales.Dto.RefreshTokenRequest;
 import com.backend.gamesales.Dto.RegisterRequest;
+import com.backend.gamesales.Model.Profile;
 import com.backend.gamesales.Model.RefreshToken;
 import com.backend.gamesales.Model.Users;
+import com.backend.gamesales.Repository.UsersRepository;
 import com.backend.gamesales.Services.AuthService;
 import com.backend.gamesales.Services.JwtService;
 import com.backend.gamesales.Services.RefreshTokenService;
@@ -13,11 +15,8 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.ErrorResponse;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +30,9 @@ public class AuthController {
 
     @Autowired
     private RefreshTokenService refreshTokenService;
+
+    @Autowired
+    private UsersRepository usersRepository;
 
     private final JwtService jwtService;
 
@@ -46,7 +48,7 @@ public class AuthController {
 
             Map<String,Object> extraClaims=new HashMap<>();
             extraClaims.put("email", users.getEmail());
-            extraClaims.put("name",users.getName());
+            extraClaims.put("displayName",users.getName());
             String jwtToken=jwtService.generateToken(extraClaims,users);
             RefreshToken refreshToken =refreshTokenService.createRefreshToken(users);
 
@@ -70,7 +72,7 @@ public class AuthController {
 
             Map<String,Object>extraClaims=new HashMap<>();
             extraClaims.put("email",users.getEmail());
-            extraClaims.put("name",users.getName());
+            extraClaims.put("displayName",users.getName());
             extraClaims.put("role", users.getRole());
 
             String jwtToken=jwtService.generateToken(extraClaims,users);
@@ -127,12 +129,41 @@ public class AuthController {
         response.put("User", buildUsuarioResponse(users));
         return response;
     }
+
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile(
+            Authentication authentication,
+            @RequestBody Profile request
+    ) {
+
+        Users user = (Users) authentication.getPrincipal();
+
+        Profile profile = user.getProfile();
+
+        if (profile == null) {
+            profile = new Profile();
+            profile.setUser(user);
+            user.setProfile(profile);
+        }
+        profile.setFirstName(request.getFirstName());
+        profile.setLastName(request.getLastName());
+        profile.setBio(request.getBio());
+        profile.setCountry(request.getCountry());
+        profile.setAvatarUrl(request.getAvatarUrl());
+        usersRepository.save(user);
+
+        return ResponseEntity.ok(profile);
+    }
+    @GetMapping("/profile")
+    public ResponseEntity<?> getProfile(Authentication authentication) {
+        Users user = (Users) authentication.getPrincipal();
+        return ResponseEntity.ok(user.getProfile());
+    }
     private Map<String, Object> buildUsuarioResponse(Users users) {
         Map<String, Object> userMap = new HashMap<>();
         userMap.put("id", users.getId());
         userMap.put("email", users.getEmail());
-        userMap.put("Name", users.getName());
-        userMap.put("LastName", users.getLastname());
+        userMap.put("name", users.getName());
         userMap.put("role", users.getRole());
 
 

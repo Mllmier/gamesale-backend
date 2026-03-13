@@ -7,7 +7,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
@@ -25,12 +24,9 @@ public class Users implements UserDetails{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column( nullable = true)
     private String name;
 
-
-    @Column(nullable = false)
-    private String lastname;
 
     @Column(nullable = false)
     private Date birthday;
@@ -45,6 +41,9 @@ public class Users implements UserDetails{
     @Column(nullable = false)
     private Role role;
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private Profile profile;
+
     public String getEmail() {
         return email;
     }
@@ -57,7 +56,10 @@ public class Users implements UserDetails{
         return List.of();
     }
 
-    @Override
+    public String getName() {
+        return this.name;
+    }
+
     public String getUsername() {
         return this.email;
     }
