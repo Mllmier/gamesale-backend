@@ -1,5 +1,7 @@
 package com.backend.gamesales.Model;
 
+import com.backend.gamesales.Model.Enums.StatusSeller;
+import com.backend.gamesales.Model.Enums.TypeSeller;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,7 +15,7 @@ public class Seller {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
     @Column(nullable = false)
     private LocalDateTime createdAt= LocalDateTime.now();;
@@ -34,6 +36,8 @@ public class Seller {
     @Column
     private String companyId;
 
+    @Column
+    private LocalDateTime verifiedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable =false)

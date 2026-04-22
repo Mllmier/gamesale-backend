@@ -23,13 +23,16 @@ public class Profile {
     private String bio;
 
     @Column(nullable=true)
-
     private String avatarUrl;
 
     @Column(nullable=true)
     private String country;
 
+    @Column(nullable=true)
+    private String phoneNumber;
+
     @OneToOne
     @JoinColumn(name="user_id")
     private Users user;
+
 }

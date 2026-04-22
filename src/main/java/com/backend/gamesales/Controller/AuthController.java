@@ -1,5 +1,6 @@
 package com.backend.gamesales.Controller;
 
+import com.backend.gamesales.Dto.AuthResponse;
 import com.backend.gamesales.Dto.LoginRequest;
 import com.backend.gamesales.Dto.RefreshTokenRequest;
 import com.backend.gamesales.Dto.RegisterRequest;
@@ -42,45 +43,26 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request){
-        try{
-            Users users=authService.register(request);
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
+        try {
+            AuthResponse response = authService.register(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
-            Map<String,Object> extraClaims=new HashMap<>();
-            extraClaims.put("email", users.getEmail());
-            extraClaims.put("displayName",users.getName());
-            String jwtToken=jwtService.generateToken(extraClaims,users);
-            RefreshToken refreshToken =refreshTokenService.createRefreshToken(users);
-
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(buildTokenResponse(jwtToken,refreshToken.getToken(),users));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ErrorResponseBuilder.buildErrorResponse(
-                            e.getMessage(),HttpStatus.BAD_REQUEST
-                    ));
+                    .body(ErrorResponseBuilder.buildErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST));
         }
     }
 
 
     @PostMapping("login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request){
-
         try{
-            Users users=authService.authenticate(request.getEmail(),request.getPassword());
-            refreshTokenService.deleteByUser(users);
-
-            Map<String,Object>extraClaims=new HashMap<>();
-            extraClaims.put("email",users.getEmail());
-            extraClaims.put("displayName",users.getName());
-            extraClaims.put("role", users.getRole());
-
-            String jwtToken=jwtService.generateToken(extraClaims,users);
-                RefreshToken refreshToken=refreshTokenService.createRefreshToken(users);
-                return ResponseEntity.ok(
-                        buildTokenResponse(jwtToken,refreshToken.getToken(),users)
-                );
-
+            AuthResponse response = authService.authenticate(
+                    request.getEmail(),
+                    request.getPassword()
+            );
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ErrorResponseBuilder.buildErrorResponse(
@@ -103,7 +85,6 @@ public class AuthController {
             Users users = refreshToken.getUsers();
             Map<String, Object> extraClaims = new HashMap<>();
             extraClaims.put("email", users.getEmail());
-            extraClaims.put("name", users.getName());
             extraClaims.put("role", users.getRole());
 
             String newJwt = jwtService.generateToken(extraClaims, users);
@@ -130,40 +111,11 @@ public class AuthController {
         return response;
     }
 
-    @PutMapping("/profile")
-    public ResponseEntity<?> updateProfile(
-            Authentication authentication,
-            @RequestBody Profile request
-    ) {
 
-        Users user = (Users) authentication.getPrincipal();
-
-        Profile profile = user.getProfile();
-
-        if (profile == null) {
-            profile = new Profile();
-            profile.setUser(user);
-            user.setProfile(profile);
-        }
-        profile.setFirstName(request.getFirstName());
-        profile.setLastName(request.getLastName());
-        profile.setBio(request.getBio());
-        profile.setCountry(request.getCountry());
-        profile.setAvatarUrl(request.getAvatarUrl());
-        usersRepository.save(user);
-
-        return ResponseEntity.ok(profile);
-    }
-    @GetMapping("/profile")
-    public ResponseEntity<?> getProfile(Authentication authentication) {
-        Users user = (Users) authentication.getPrincipal();
-        return ResponseEntity.ok(user.getProfile());
-    }
     private Map<String, Object> buildUsuarioResponse(Users users) {
         Map<String, Object> userMap = new HashMap<>();
         userMap.put("id", users.getId());
         userMap.put("email", users.getEmail());
-        userMap.put("name", users.getName());
         userMap.put("role", users.getRole());
 
 

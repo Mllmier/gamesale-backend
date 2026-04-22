@@ -1,6 +1,6 @@
 package com.backend.gamesales.Config;
 
-import com.backend.gamesales.Model.Role;
+import com.backend.gamesales.Model.Enums.Role;
 import com.backend.gamesales.Model.Users;
 import com.backend.gamesales.Repository.UsersRepository;
 import org.springframework.boot.CommandLineRunner;

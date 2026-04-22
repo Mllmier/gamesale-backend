@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -18,6 +19,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Autowired
@@ -32,8 +34,19 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/seller/request").authenticated()
+                        .requestMatchers("/api/seller/status").authenticated()
+                        .requestMatchers("/api/seller/profile").authenticated()
+                        .requestMatchers("/api/seller/approve/**").authenticated()
+                        .requestMatchers("/api/seller/reject/**").authenticated()
                         .requestMatchers("/api/seller/**").permitAll()
-                        .requestMatchers("/api/game/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/games/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/games/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/games/**").authenticated()
+                        .requestMatchers( "/api/profile/avatars/defaults").permitAll()
+                        .requestMatchers( "/api/profile/seller/*").permitAll()
+                        .requestMatchers("/api/profile/seller/**").hasAuthority("SELLER")
+                        .requestMatchers("/api/profile/**").authenticated()
                         .requestMatchers(
                                 "/forgot-password/verify-mail/**",
                                 "/forgot-password/verify-otp/**",

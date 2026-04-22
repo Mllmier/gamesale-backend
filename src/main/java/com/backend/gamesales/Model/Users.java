@@ -1,12 +1,14 @@
 package com.backend.gamesales.Model;
 
 
+import com.backend.gamesales.Model.Enums.Role;
 import jakarta.persistence.Entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
@@ -24,10 +26,6 @@ public class Users implements UserDetails{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column( nullable = true)
-    private String name;
-
-
     @Column(nullable = false)
     private Date birthday;
 
@@ -44,6 +42,9 @@ public class Users implements UserDetails{
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private Profile profile;
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private Seller seller;
+
     public String getEmail() {
         return email;
     }
@@ -53,12 +54,10 @@ public class Users implements UserDetails{
     }
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
-    public String getName() {
-        return this.name;
-    }
+
 
     public String getUsername() {
         return this.email;
@@ -83,5 +82,8 @@ public class Users implements UserDetails{
     public boolean isEnabled() {
         return UserDetails.super.isEnabled();
     }
+
+
+
 
 }

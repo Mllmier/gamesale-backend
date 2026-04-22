@@ -22,6 +22,15 @@ public class ForgotPassword {
     @Column(nullable=false)
     private Date expirationTime;
 
+    private boolean verified = false;
+
+
+    @Column(nullable = false)
+    private int resetRequestCount = 0;
+
+    @Column
+    private Date lastRequestDate;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="user_id",nullable=false,unique = true)
     private Users users;

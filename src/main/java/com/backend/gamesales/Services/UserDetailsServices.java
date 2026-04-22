@@ -19,13 +19,10 @@ public class UserDetailsServices implements UserDetailsService {
      @Autowired
      private UsersRepository usersRepository;
     public UserDetails loadUserByUsername(String email)throws UsernameNotFoundException{
-        Users users =usersRepository.findByEmail(email)
+        return usersRepository.findByEmailWithRelations(email)
                 .orElseThrow(()-> {
-                    log.error("User not found with email{}", email);
+                    log.error("User not found with email {}", email);
                     return new UsernameNotFoundException("User not found");
                 });
-        log.info("User not found {}" ,email,users);
-
-        return users;
     }
 }

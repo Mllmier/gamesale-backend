@@ -1,19 +1,16 @@
 spring:
   application:
     name: gamesales
-
   datasource:
     url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
-
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-
   mail:
     host: smtp.gmail.com
     port: 587
@@ -32,3 +29,13 @@ app:
     secret: ${JWT_SECRET}
     expirationMs: ${JWT_EXPIRATION}
     refreshExpirationMs: ${JWT_REFRESH_EXPIRATION}
+
+supabase:
+  url: https://quolzbayawbprmjjexxd.supabase.co
+  key: ${SUPABASE_KEY}
+  bucket: game-images
+
+forgot-password:
+  max-reset-requests: 2
+  window-hours: 24
+  otp-expiration-minutes: 10

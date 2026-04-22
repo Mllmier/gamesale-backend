@@ -1,8 +1,7 @@
 package com.backend.gamesales.Controller;
 
-import com.backend.gamesales.Dto.ChangePassword;
-import com.backend.gamesales.Dto.VerifyOtpRequest;
-import com.backend.gamesales.Model.ForgotPassword;
+import com.backend.gamesales.Dto.Records.ChangePassword;
+import com.backend.gamesales.Dto.Records.VerifyOtpRequest;
 import com.backend.gamesales.Services.ForgotPasswordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
