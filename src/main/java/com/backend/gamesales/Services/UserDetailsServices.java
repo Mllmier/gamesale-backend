@@ -2,6 +2,7 @@ package com.backend.gamesales.Services;
 
 import com.backend.gamesales.Model.Users;
 import com.backend.gamesales.Repository.UsersRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,18 +15,16 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Setter
 @Service
+@RequiredArgsConstructor
 public class UserDetailsServices implements UserDetailsService {
 
-     @Autowired
-     private UsersRepository usersRepository;
+
+    private  final UsersRepository usersRepository;
     public UserDetails loadUserByUsername(String email)throws UsernameNotFoundException{
-        Users users =usersRepository.findByEmail(email)
+        return usersRepository.findByEmailWithRelations(email)
                 .orElseThrow(()-> {
-                    log.error("User not found with email{}", email);
+                    log.error("User not found with email {}", email);
                     return new UsernameNotFoundException("User not found");
                 });
-        log.info("User not found {}" ,email,users);
-
-        return users;
     }
 }

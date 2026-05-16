@@ -23,8 +23,7 @@ public class RefreshTokenService {
     private RefreshTokenRepository refreshTokenRepository;
 
     public RefreshToken createRefreshToken(Users users) {
-        refreshTokenRepository.deleteByUserId(users.getId());
-
+        deleteByUser(users);
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUsers(users);
         refreshToken.setToken(UUID.randomUUID().toString());
@@ -50,8 +49,8 @@ public class RefreshTokenService {
     public boolean isTokenExpired(RefreshToken token) {
         return token.getExpiryDate().isBefore(Instant.now());
     }
-
     public void deleteByUser(Users user) {
         refreshTokenRepository.deleteByUser(user);
     }
+
 }

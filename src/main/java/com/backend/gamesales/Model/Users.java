@@ -1,14 +1,19 @@
 package com.backend.gamesales.Model;
 
 
+import com.backend.gamesales.Model.Enums.Role;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.Entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -17,19 +22,14 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
-@Slf4j
 @Table(name="users")
 public class Users implements UserDetails{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column( nullable = true)
-    private String name;
-
-
     @Column(nullable = false)
-    private Date birthday;
+    private LocalDate birthday;
 
     @Column(nullable = false)
     private String password;
@@ -42,7 +42,12 @@ public class Users implements UserDetails{
     private Role role;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonManagedReference("user-profile")
     private Profile profile;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonManagedReference("user-seller")
+    private Seller seller;
 
     public String getEmail() {
         return email;
@@ -53,12 +58,10 @@ public class Users implements UserDetails{
     }
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
-    public String getName() {
-        return this.name;
-    }
+
 
     public String getUsername() {
         return this.email;
@@ -83,5 +86,8 @@ public class Users implements UserDetails{
     public boolean isEnabled() {
         return UserDetails.super.isEnabled();
     }
+
+
+
 
 }

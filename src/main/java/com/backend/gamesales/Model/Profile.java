@@ -1,5 +1,6 @@
 package com.backend.gamesales.Model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,13 +24,17 @@ public class Profile {
     private String bio;
 
     @Column(nullable=true)
-
     private String avatarUrl;
 
     @Column(nullable=true)
     private String country;
 
-    @OneToOne
+    @Column(nullable=true)
+    private String phoneNumber;
+
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name="user_id")
+    @JsonBackReference("user-profile")
     private Users user;
+
 }

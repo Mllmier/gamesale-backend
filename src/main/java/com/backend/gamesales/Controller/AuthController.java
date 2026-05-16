@@ -1,179 +1,45 @@
 package com.backend.gamesales.Controller;
 
-import com.backend.gamesales.Dto.LoginRequest;
-import com.backend.gamesales.Dto.RefreshTokenRequest;
-import com.backend.gamesales.Dto.RegisterRequest;
-import com.backend.gamesales.Model.Profile;
-import com.backend.gamesales.Model.RefreshToken;
-import com.backend.gamesales.Model.Users;
-import com.backend.gamesales.Repository.UsersRepository;
+import com.backend.gamesales.Dto.Response.AuthResponse;
+import com.backend.gamesales.Dto.Request.LoginRequest;
+import com.backend.gamesales.Dto.Request.RefreshTokenRequest;
+import com.backend.gamesales.Dto.Request.RegisterRequest;
 import com.backend.gamesales.Services.AuthService;
-import com.backend.gamesales.Services.JwtService;
 import com.backend.gamesales.Services.RefreshTokenService;
-import com.backend.gamesales.Utils.ErrorResponseBuilder;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
-    @Autowired
-    private AuthService authService;
-
-    @Autowired
-    private RefreshTokenService refreshTokenService;
-
-    @Autowired
-    private UsersRepository usersRepository;
-
-    private final JwtService jwtService;
-
-    public AuthController(AuthService authService,JwtService jwtService){
-        this.authService=authService;
-        this.jwtService=jwtService;
-    }
+    private final AuthService authService;
+    private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request){
-        try{
-            Users users=authService.register(request);
-
-            Map<String,Object> extraClaims=new HashMap<>();
-            extraClaims.put("email", users.getEmail());
-            extraClaims.put("displayName",users.getName());
-            String jwtToken=jwtService.generateToken(extraClaims,users);
-            RefreshToken refreshToken =refreshTokenService.createRefreshToken(users);
-
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(buildTokenResponse(jwtToken,refreshToken.getToken(),users));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ErrorResponseBuilder.buildErrorResponse(
-                            e.getMessage(),HttpStatus.BAD_REQUEST
-                    ));
-        }
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }
 
-
-    @PostMapping("login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request){
-
-        try{
-            Users users=authService.authenticate(request.getEmail(),request.getPassword());
-            refreshTokenService.deleteByUser(users);
-
-            Map<String,Object>extraClaims=new HashMap<>();
-            extraClaims.put("email",users.getEmail());
-            extraClaims.put("displayName",users.getName());
-            extraClaims.put("role", users.getRole());
-
-            String jwtToken=jwtService.generateToken(extraClaims,users);
-                RefreshToken refreshToken=refreshTokenService.createRefreshToken(users);
-                return ResponseEntity.ok(
-                        buildTokenResponse(jwtToken,refreshToken.getToken(),users)
-                );
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ErrorResponseBuilder.buildErrorResponse(
-                            e.getMessage(),HttpStatus.UNAUTHORIZED
-                    ));
-        }
-
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.authenticate(request.getEmail(), request.getPassword()));
     }
+
     @PostMapping("/refresh-token")
-    public ResponseEntity<?> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
-        try {
-            RefreshToken refreshToken = refreshTokenService.findByToken(request.getRefreshToken())
-                    .orElseThrow(() -> new RuntimeException("Refresh token invalid"));
-
-            if (refreshTokenService.isTokenExpired(refreshToken)) {
-                refreshTokenService.deleteByUser(refreshToken.getUsers());
-                throw new RuntimeException("Token is expired");
-            }
-            RefreshToken newRefreshToken = refreshTokenService.rotateRefreshToken(refreshToken);
-            Users users = refreshToken.getUsers();
-            Map<String, Object> extraClaims = new HashMap<>();
-            extraClaims.put("email", users.getEmail());
-            extraClaims.put("name", users.getName());
-            extraClaims.put("role", users.getRole());
-
-            String newJwt = jwtService.generateToken(extraClaims, users);
-
-            return ResponseEntity.ok(
-                    buildTokenResponse(newJwt, newRefreshToken.getToken(), users)
-            );
-        } catch (RuntimeException e) {
-            return buildErrorResponse(e.getMessage(), HttpStatus.UNAUTHORIZED);
-        }
+    public ResponseEntity<AuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refreshToken(request.getRefreshToken()));
     }
+
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(@RequestBody RefreshTokenRequest request) {
-        refreshTokenService.findByToken(request.getRefreshToken())
-                .ifPresent(token -> refreshTokenService.deleteByUser(token.getUsers()));
-        return ResponseEntity.ok(Map.of("message", "Logout exitoso"));
-    }
-
-    private Map<String, Object> buildTokenResponse(String token, String refreshToken, Users users) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("token", token);
-        response.put("refreshToken", refreshToken);
-        response.put("User", buildUsuarioResponse(users));
-        return response;
-    }
-
-    @PutMapping("/profile")
-    public ResponseEntity<?> updateProfile(
-            Authentication authentication,
-            @RequestBody Profile request
-    ) {
-
-        Users user = (Users) authentication.getPrincipal();
-
-        Profile profile = user.getProfile();
-
-        if (profile == null) {
-            profile = new Profile();
-            profile.setUser(user);
-            user.setProfile(profile);
-        }
-        profile.setFirstName(request.getFirstName());
-        profile.setLastName(request.getLastName());
-        profile.setBio(request.getBio());
-        profile.setCountry(request.getCountry());
-        profile.setAvatarUrl(request.getAvatarUrl());
-        usersRepository.save(user);
-
-        return ResponseEntity.ok(profile);
-    }
-    @GetMapping("/profile")
-    public ResponseEntity<?> getProfile(Authentication authentication) {
-        Users user = (Users) authentication.getPrincipal();
-        return ResponseEntity.ok(user.getProfile());
-    }
-    private Map<String, Object> buildUsuarioResponse(Users users) {
-        Map<String, Object> userMap = new HashMap<>();
-        userMap.put("id", users.getId());
-        userMap.put("email", users.getEmail());
-        userMap.put("name", users.getName());
-        userMap.put("role", users.getRole());
-
-
-        return userMap;
-    }
-
-    private ResponseEntity<Map<String, Object>> buildErrorResponse(String message, HttpStatus status) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("ERROR", message);
-        response.put("timestamp", System.currentTimeMillis());
-        return ResponseEntity.status(status).body(response);
+    public ResponseEntity<Map<String, String>> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        authService.logout(request.getRefreshToken());
+        return ResponseEntity.ok(Map.of("message", "Sesión cerrada exitosamente"));
     }
 }
