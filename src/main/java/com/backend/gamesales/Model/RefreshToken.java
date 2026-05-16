@@ -9,7 +9,7 @@ import lombok.Setter;
 import java.time.Instant;
 
 @Entity
-@Table(name="refresh token" )
+@Table(name="refresh_token" )
 @AllArgsConstructor
 @Getter
 @Setter
@@ -35,3 +35,4 @@ public class RefreshToken {
         return Instant.now().isAfter(this.expiryDate);
     }
 }
+

@@ -1,18 +1,22 @@
 spring:
   application:
     name: gamesales
-    datasource:
-      url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}
-      username: ${DB_USER}
-      password: ${DB_PASSWORD}
-      driver-class-name: org.postgresql.Driver
-
-      jpa:
-        hibernate:
-          ddl-auto: update
-        show-sql: true
-        database-platform: org.hibernate.dialect.PostgreSQLDialect
-
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL}
+    password: ${PASS_EMAIL}
+    properties:
       mail:
         host: smtp.gmail.com
         port: 587
@@ -26,8 +30,30 @@ spring:
                 enable: true
                 required: true
 
-    app:
-      jwt:
-        secret: ${JWT_SECRET}
-        expirationMs: ${JWT_EXPIRATION}
-        refreshExpirationMs: ${JWT_REFRESH_EXPIRATION}
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expirationMs: ${JWT_EXPIRATION}
+    refreshExpirationMs: ${JWT_REFRESH_EXPIRATION}
+  commission:
+    percentage: ${COMMISSION_PERCENTAGE:18}
+
+supabase:
+  url: https://quolzbayawbprmjjexxd.supabase.co
+  key: ${SUPABASE_KEY}
+  bucket: game-images
+
+forgot-password:
+  max-reset-requests: 2
+  window-hours: 24
+  otp-expiration-minutes: 10
+
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY}
+  public-key: ${STRIPE_PUBLIC_KEY}
+  success-url: https://google.com?session_id={CHECKOUT_SESSION_ID}
+  cancel-url: https://google.com
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+  onboarding:
+    return-url: http://localhost:4200/seller/onboarding-exito
+    refresh-url: http://localhost:4200/seller/onboarding-error
