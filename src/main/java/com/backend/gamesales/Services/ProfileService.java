@@ -1,18 +1,17 @@
 package com.backend.gamesales.Services;
 
-import com.backend.gamesales.Dto.ProfileRequest;
-import com.backend.gamesales.Dto.ProfileResponse;
-import com.backend.gamesales.Dto.SellerRequest;
-import com.backend.gamesales.Dto.SellerResponse;
-import com.backend.gamesales.Model.Enums.Role;
-import com.backend.gamesales.Model.Enums.StatusSeller;
-import com.backend.gamesales.Model.Enums.TypeSeller;
+import com.backend.gamesales.Dto.Request.ProfileRequest;
+import com.backend.gamesales.Dto.Response.ProfileResponse;
+import com.backend.gamesales.Infrastructure.Storage.Storage;
 import com.backend.gamesales.Model.Profile;
-import com.backend.gamesales.Model.Seller;
 import com.backend.gamesales.Model.Users;
 import com.backend.gamesales.Repository.SellerRepository;
 import com.backend.gamesales.Repository.UsersRepository;
+import com.backend.gamesales.Utils.PasswordValidator;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,7 +22,7 @@ import java.util.List;
 public class ProfileService {
     private final UsersRepository usersRepository;
     private final SellerRepository sellerRepository;
-    private final StorageService storageService;
+    private final Storage storage;
     private static final List<String> DEFAULT_AVATARS = List.of(
             "https://TU_PROYECTO.supabase.co/storage/v1/object/public/TU_BUCKET/avatars/defaults/avatar1.png",
             "https://TU_PROYECTO.supabase.co/storage/v1/object/public/TU_BUCKET/avatars/defaults/avatar2.png",
@@ -49,6 +48,16 @@ public class ProfileService {
             profile.setUser(user);
             user.setProfile(profile);
         }
+
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            usersRepository.findByEmail(request.getEmail()).ifPresent(existing -> {
+                if (!existing.getId().equals(user.getId())) {
+                    throw new RuntimeException("The email is already in use.");
+                }
+            });
+            user.setEmail(request.getEmail());
+        }
+
         applyProfileFields(profile, request);
         usersRepository.save(user);
         return toProfileResponse(user, profile);
@@ -97,12 +106,12 @@ public class ProfileService {
         Profile profile = freshUser.getProfile();
 
         if (profile == null) {
-            throw new RuntimeException("Completa tu perfil antes de cambiar el avatar");
+            throw new RuntimeException("Complete your profile before changing your avatar");
         }
 
 
         if (!DEFAULT_AVATARS.contains(avatarUrl)) {
-            throw new RuntimeException("Avatar no válido");
+            throw new RuntimeException("Invalid  Avatar ");
         }
 
 
@@ -110,7 +119,7 @@ public class ProfileService {
                 && !profile.getAvatarUrl().isBlank()
                 && profile.getAvatarUrl().contains("/avatars/")
                 && !profile.getAvatarUrl().contains("/defaults/")) {
-            storageService.deleteImage(profile.getAvatarUrl());
+            storage.deleteImage(profile.getAvatarUrl());
         }
 
         profile.setAvatarUrl(avatarUrl);
@@ -123,14 +132,28 @@ public class ProfileService {
         Profile profile = freshUser.getProfile();
 
         if (profile == null) {
-            throw new RuntimeException("Completa tu perfil antes de cambiar el avatar");
+            throw new RuntimeException("Complete your profile before changing your avatar");
         }
 
-        String newAvatarUrl = storageService.replaceAvatar(
+        String newAvatarUrl = storage.replaceAvatar(
                 profile.getAvatarUrl(), image, freshUser.getId()
         );
         profile.setAvatarUrl(newAvatarUrl);
         usersRepository.save(freshUser);
         return toProfileResponse(freshUser, profile);
     }
+
+    public void changePasswordAuthenticated(Users user, String currentPassword,
+                                            String newPassword, PasswordEncoder passwordEncoder) {
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("The password is incorrect");
+        }
+        if (!PasswordValidator.isValid(newPassword)) {
+            throw new RuntimeException(
+                    "The password must be at least 8 characters long and include letters and numbers.");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        usersRepository.save(user);
+    }
+
 }

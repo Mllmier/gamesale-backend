@@ -1,7 +1,7 @@
 package com.backend.gamesales.Services;
 
-import com.backend.gamesales.Dto.Records.ReviewRequest;
-import com.backend.gamesales.Dto.Records.ReviewResponse;
+import com.backend.gamesales.Dto.Request.ReviewRequest;
+import com.backend.gamesales.Dto.Response.ReviewResponse;
 import com.backend.gamesales.Model.Game;
 import com.backend.gamesales.Model.Review;
 import com.backend.gamesales.Model.Users;
@@ -10,6 +10,8 @@ import com.backend.gamesales.Repository.ReviewRepository;
 import com.backend.gamesales.Repository.UsersRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -20,28 +22,32 @@ public class ReviewService {
     private final UsersRepository usersRepository;
 
 
-    public ReviewResponse createReview (Long gameId, String email, ReviewRequest request){
+    public ReviewResponse createReview(Long gameId, String email, ReviewRequest request) {
+        Game game = gameRepository.findById(gameId)
+                .orElseThrow(() -> new RuntimeException("Game not found "));
 
-        Game game=gameRepository.findById(gameId)
-                .orElseThrow(()-> new RuntimeException("Game not found"));
+        Users users = usersRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Users users=usersRepository.findByEmail(email)
-                .orElseThrow(()->new RuntimeException("User not found "));
-
-        if(reviewRepository.existsByGameIdAndUserId(gameId,users.getId())){
-            throw new RuntimeException("Yo have already reviewed this game");
+        if (reviewRepository.existsByGameIdAndUserId(gameId, users.getId())) {
+            throw new RuntimeException("You have already rated this game.");
         }
 
-        Review review= Review.builder()
+        Review review = Review.builder()
                 .comment(request.comment())
                 .rating(request.rating())
                 .game(game)
                 .user(users)
                 .build();
 
-        Review saved=reviewRepository.save(review);
-
+        Review saved = reviewRepository.save(review);
         return toResponse(saved);
+    }
+
+    public List<ReviewResponse> getReviewsByGameId(Long gameId) {
+        return reviewRepository.findByGameIdOrderByCreatedAtDesc(gameId).stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     private ReviewResponse toResponse(Review review) {
@@ -54,7 +60,7 @@ public class ReviewService {
             username = user.getProfile().getFirstName()
                     + " " + user.getProfile().getLastName();
         } else {
-            username = user.getEmail(); // fallback si no tiene perfil completo
+            username = user.getEmail();
         }
 
         return new ReviewResponse(

@@ -1,8 +1,12 @@
 package com.backend.gamesales.Services;
 
-import com.backend.gamesales.Dto.SellerRequest;
-import com.backend.gamesales.Dto.SellerResponse;
-import com.backend.gamesales.Dto.SellerStatusResponse;
+import com.backend.gamesales.Dto.Request.SellerRequest;
+import com.backend.gamesales.Dto.Response.RejectReasonResponse;
+import com.backend.gamesales.Dto.Response.SellerResponse;
+import com.backend.gamesales.Dto.Response.SellerStatusResponse;
+import com.backend.gamesales.Exceptions.NotFoundException;
+import com.backend.gamesales.Infrastructure.EmailSender;
+import com.backend.gamesales.Infrastructure.StripeConnect;
 import com.backend.gamesales.Model.Enums.Role;
 import com.backend.gamesales.Model.Enums.TypeSeller;
 import com.backend.gamesales.Model.Seller;
@@ -10,32 +14,30 @@ import com.backend.gamesales.Model.Enums.StatusSeller;
 import com.backend.gamesales.Model.Users;
 import com.backend.gamesales.Repository.SellerRepository;
 import com.backend.gamesales.Repository.UsersRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
 @Service
+@RequiredArgsConstructor
 public class SellerService {
 
-    @Autowired
-    private SellerRepository sellerRepository;
-
-    @Autowired
-    private UsersRepository usersRepository;
-
+    private final SellerRepository sellerRepository;
+    private final UsersRepository usersRepository;
+    private final StripeConnect stripeConnect;
+    private final EmailSender emailSender;
 
     public SellerResponse requestSeller(SellerRequest request, Users user) {
         if (user.getProfile() == null) {
-            throw new RuntimeException("Complete your profile before requesting to be a seller");
+            throw new RuntimeException(" Complete your profile before applying to be a seller");
         }
         if (sellerRepository.existsByUser(user)) {
-            throw new RuntimeException("You already have a seller request registered");
+            throw new RuntimeException("You already have a registered seller application.");
         }
         if (request.getTypeSeller() == TypeSeller.LEGAL_ENTITY &&
                 (request.getCompanyName() == null || request.getCompanyName().isBlank())) {
-            throw new RuntimeException("Company name is required for legal entity sellers");
+            throw new RuntimeException("The company name is mandatory for legal entities.");
         }
 
         Seller seller = new Seller();
@@ -44,25 +46,24 @@ public class SellerService {
         seller.setRating(0.0);
         seller.setUser(user);
 
-        sellerRepository.save(seller);
+        seller = sellerRepository.save(seller);
         return toSellerResponse(user, seller);
     }
 
-
     public SellerStatusResponse getSellerStatus(Users user) {
-        if (user.getSeller() == null) {
+        Seller seller = sellerRepository.findByUserId(user.getId()).orElse(null);
+
+        if (seller == null) {
             return SellerStatusResponse.builder()
                     .status(null)
-                    .message("You have not submitted a request to become a seller yet")
+                    .message("You haven't yet submitted an application to become a seller.")
                     .build();
         }
 
-        Seller seller = user.getSeller();
-
         String message = switch (seller.getStatus()) {
-            case PENDING   -> "Your request is under review. We will notify you soon.";
-            case APPROVED  -> "Your store is active. You can start selling.";
-            case REJECTED  -> "Your request was rejected. You can apply again.";
+            case PENDING   -> "Your application is under review. We will notify you soon.";
+            case APPROVED  -> "Your store is live. You can start selling.";
+            case REJECTED  ->  buildRejectedMessage(seller.getRejectionReason());
         };
 
         return SellerStatusResponse.builder()
@@ -73,7 +74,6 @@ public class SellerService {
                 .build();
     }
 
-
     public SellerResponse getSellerProfile(Users user) {
         return toSellerResponse(user, getSellerOrThrow(user));
     }
@@ -83,7 +83,7 @@ public class SellerService {
 
         if (request.getTypeSeller() == TypeSeller.LEGAL_ENTITY &&
                 (request.getCompanyName() == null || request.getCompanyName().isBlank())) {
-            throw new RuntimeException("Company name is required for legal entity sellers");
+            throw new RuntimeException("The company name is mandatory for legal entities.");
         }
 
         applySellerFields(seller, request);
@@ -91,20 +91,18 @@ public class SellerService {
         return toSellerResponse(user, seller);
     }
 
-
     public SellerResponse getPublicProfile(Long userId) {
         Seller seller = sellerRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Seller not found"));
         return toSellerResponse(seller.getUser(), seller);
     }
 
-
     public void approveSeller(Long id) {
         Seller seller = sellerRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Seller request not found"));
 
         if (seller.getStatus() != StatusSeller.PENDING) {
-            throw new RuntimeException("This request has already been processed");
+            throw new RuntimeException("This request has already been processed.");
         }
 
         seller.setStatus(StatusSeller.APPROVED);
@@ -116,31 +114,26 @@ public class SellerService {
         usersRepository.save(user);
     }
 
-    public void rejectSeller(Long id) {
+    public RejectReasonResponse rejectSeller(Long id, String reason) {
         Seller seller = sellerRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Seller request not found"));
 
         if (seller.getStatus() != StatusSeller.PENDING) {
-            throw new RuntimeException("This request has already been processed");
+            throw new RuntimeException("This request has already been processed.");
         }
 
         seller.setStatus(StatusSeller.REJECTED);
+        seller.setRejectionReason(reason);
         sellerRepository.save(seller);
+
+        return RejectReasonResponse.builder()
+                .message("Seller rejected successfully")
+                .reason(reason)
+                .build();
     }
-
-    public void suspendSeller(Long id) {
-        Seller seller = sellerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Seller not found"));
-
-        if (seller.getStatus() != StatusSeller.APPROVED) {
-            throw new RuntimeException("Only active sellers can be suspended");
-        }
-
-        sellerRepository.save(seller);
-    }
-
 
     private void applySellerFields(Seller seller, SellerRequest request) {
+        seller.setStoreName(request.getStoreName());
         seller.setDescription(request.getDescription());
         seller.setTypeSeller(request.getTypeSeller());
         seller.setCompanyName(request.getCompanyName());
@@ -148,14 +141,20 @@ public class SellerService {
     }
 
     public Seller getSellerOrThrow(Users user) {
-        if (user.getSeller() == null) {
-            throw new RuntimeException("This user does not have a registered store");
+        return sellerRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new RuntimeException("This user does not have a registered store."));
+    }
+    private String buildRejectedMessage(String reason) {
+        if (reason == null || reason.isBlank()) {
+            return "Your request was rejected. You can try again.";
         }
-        return user.getSeller();
+        return "Your request was rejected: " + reason;
     }
 
     private SellerResponse toSellerResponse(Users user, Seller seller) {
         return SellerResponse.builder()
+                .id(seller.getId())
+                .storeName(seller.getStoreName())
                 .description(seller.getDescription())
                 .typeSeller(seller.getTypeSeller())
                 .companyName(seller.getCompanyName())
@@ -164,5 +163,11 @@ public class SellerService {
                 .rating(seller.getRating())
                 .createdAt(seller.getCreatedAt())
                 .build();
+    }
+    public void deactivateMyAccount(String email) {
+        Seller seller = sellerRepository.findByUserEmail(email)
+                .orElseThrow(() -> new NotFoundException("Seller not found"));
+        seller.setActive(false);
+        sellerRepository.save(seller);
     }
 }

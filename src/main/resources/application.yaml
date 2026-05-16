@@ -29,6 +29,8 @@ app:
     secret: ${JWT_SECRET}
     expirationMs: ${JWT_EXPIRATION}
     refreshExpirationMs: ${JWT_REFRESH_EXPIRATION}
+  commission:
+    percentage: ${COMMISSION_PERCENTAGE:18}
 
 supabase:
   url: https://quolzbayawbprmjjexxd.supabase.co
@@ -39,3 +41,13 @@ forgot-password:
   max-reset-requests: 2
   window-hours: 24
   otp-expiration-minutes: 10
+
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY}
+  public-key: ${STRIPE_PUBLIC_KEY}
+  success-url: https://google.com?session_id={CHECKOUT_SESSION_ID}
+  cancel-url: https://google.com
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+  onboarding:
+    return-url: http://localhost:4200/seller/onboarding-exito
+    refresh-url: http://localhost:4200/seller/onboarding-error

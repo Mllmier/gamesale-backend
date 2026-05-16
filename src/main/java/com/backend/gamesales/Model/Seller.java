@@ -2,6 +2,7 @@ package com.backend.gamesales.Model;
 
 import com.backend.gamesales.Model.Enums.StatusSeller;
 import com.backend.gamesales.Model.Enums.TypeSeller;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,7 +24,10 @@ public class Seller {
     @Column(nullable = false)
     private Double rating;
 
-    @Column(nullable=false)
+    @Column(nullable = false)
+    private String storeName;
+
+    @Column(nullable = false)
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -39,14 +43,22 @@ public class Seller {
     @Column
     private LocalDateTime verifiedAt;
 
+    @Column
+    private String rejectionReason;
+
+    @Column(name = "stripe_account_id", unique = true)
+    private String stripeAccountId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable =false)
     private StatusSeller status;
 
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonBackReference("user-seller")
     private Users user;
 
-
+    @Column(nullable = false)
+    private Boolean active = true;
 
 }

@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDate;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
@@ -27,7 +28,7 @@ public class Admin {
                 admin.setEmail("admin@gmail.com");
                 admin.setPassword(passwordEncoder.encode("admin123"));
                 admin.setRole(Role.ADMINISTRATOR);
-                admin.setBirthday(new GregorianCalendar(2000, Calendar.JANUARY, 1).getTime());
+                admin.setBirthday(LocalDate.of(2000, 1, 1));
                 usersRepository.save(admin);
 
                 System.out.println("create administrator");

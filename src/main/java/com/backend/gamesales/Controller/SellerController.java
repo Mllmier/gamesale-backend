@@ -1,29 +1,37 @@
 package com.backend.gamesales.Controller;
 
-import com.backend.gamesales.Dto.SellerRequest;
-import com.backend.gamesales.Dto.SellerResponse;
-import com.backend.gamesales.Dto.SellerStatusResponse;
-import com.backend.gamesales.Model.Users;
-import com.backend.gamesales.Services.SellerService;
-import jakarta.validation.Valid;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import java.util.Map;
 
+import com.backend.gamesales.Dto.Response.RejectReasonResponse;
+import com.backend.gamesales.Services.SellerOnboardingService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import com.backend.gamesales.Dto.SellerRequest;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
+import com.backend.gamesales.Dto.Request.RejectReasonRequest;
+import com.backend.gamesales.Dto.Request.SellerRequest;
+import com.backend.gamesales.Dto.Response.EarningResponse;
+import com.backend.gamesales.Dto.Response.SellerResponse;
+import com.backend.gamesales.Model.Users;
+import com.backend.gamesales.Services.SellerEarningService;
+import com.backend.gamesales.Services.SellerService;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/seller")
 public class SellerController {
 
-
     private final SellerService sellerService;
+    private final SellerEarningService sellerEarningService;
+    private final SellerOnboardingService sellerOnboardingService;
+
 
     @PostMapping("/request")
     @PreAuthorize("isAuthenticated()")
@@ -39,7 +47,7 @@ public class SellerController {
     public ResponseEntity<?> getStatus(Authentication authentication) {
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(401).body("User not authenticated");
+            return ResponseEntity.status(401).body(Map.of("message", "User not authenticated"));
         }
         Users user = (Users) authentication.getPrincipal();
         return ResponseEntity.ok(sellerService.getSellerStatus(user));
@@ -69,16 +77,39 @@ public class SellerController {
 
     @PutMapping("/approve/{id}")
     @PreAuthorize("hasAuthority('ADMINISTRATOR')")
-    public ResponseEntity<String> approveSeller(@PathVariable Long id) {
+    public ResponseEntity<Map<String, String>> approveSeller(@PathVariable Long id) {
         sellerService.approveSeller(id);
-        return ResponseEntity.ok("Seller approved successfully");
+        return ResponseEntity.ok(Map.of("message", "Seller approved successfully"));
+    }
+
+    @PostMapping("/onboarding")
+    @PreAuthorize("hasAuthority('SELLER')")
+    public ResponseEntity<Map<String, String>> iniciarOnboarding(Authentication authentication) {
+        Users user = (Users) authentication.getPrincipal();
+        String url = sellerOnboardingService.iniciarOnboarding(user);
+        return ResponseEntity.ok(Map.of("onboardingUrl", url));
     }
 
     @PutMapping("/reject/{id}")
     @PreAuthorize("hasAuthority('ADMINISTRATOR')")
-    public ResponseEntity<String> rejectSeller(@PathVariable Long id) {
-        sellerService.rejectSeller(id);
-        return ResponseEntity.ok("Seller rejected successfully");
+    public ResponseEntity<RejectReasonResponse> rejectSeller(
+            @PathVariable Long id,
+            @Valid @RequestBody RejectReasonRequest request) {
+        return ResponseEntity.ok(sellerService.rejectSeller(id, request.getReason()));
     }
+    
+    @GetMapping("/earnings")
+    @PreAuthorize("hasAuthority('SELLER')")
+    public ResponseEntity<EarningResponse> getEarnings(Authentication authentication) {
+        Users user = (Users) authentication.getPrincipal();
+        return ResponseEntity.ok(sellerEarningService.getEarnings(user));
+    }
+    @PatchMapping("/me/deactivate")
+    @PreAuthorize("hasRole('SELLER')")
+    public ResponseEntity<Void> deactivateMyAccount(@AuthenticationPrincipal UserDetails userDetails) {
+        sellerService.deactivateMyAccount(userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
 
 }

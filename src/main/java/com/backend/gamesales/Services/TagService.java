@@ -15,13 +15,31 @@ import java.util.Set;
 @NoArgsConstructor
 public class TagService {
 
+    public Tags createTag(String name) {
+        if (tagRepository.existsByNameIgnoreCase(name)) {
+            throw new RuntimeException("The tag already exists");
+        }
+        Tags tag = new Tags();
+        tag.setName(name);
+        return tagRepository.save(tag);
+    }
+
+    public void deleteTag(Long id) {
+        if (!tagRepository.existsById(id)) {
+            throw new NotFoundException("Tag not found: " + id);
+        }
+        tagRepository.deleteById(id);
+    }
+
     @Autowired
-    private  TagRepository tagRepository;
+    private TagRepository tagRepository;
+
     public Set<Tags> resolveTags(Set<Long> tagIds) {
-        if (tagIds == null || tagIds.isEmpty()) return new HashSet<>();
+        if (tagIds == null || tagIds.isEmpty())
+            return new HashSet<>();
         Set<Tags> tags = new HashSet<>(tagRepository.findAllById(tagIds));
         if (tags.size() != tagIds.size()) {
-            throw new RuntimeException("Uno o más tags no existen");
+            throw new RuntimeException("One or more tags do not exist");
         }
         return tags;
     }
@@ -29,10 +47,10 @@ public class TagService {
     public List<Tags> getAll() {
         return tagRepository.findAll();
     }
+
     public Tags getById(Long id) {
         return tagRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tag not found: " + id));
     }
-
 
 }

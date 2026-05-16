@@ -2,6 +2,8 @@ package com.backend.gamesales.Model;
 
 
 import com.backend.gamesales.Model.Enums.Role;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.Entity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -11,6 +13,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -19,7 +22,6 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
-@Slf4j
 @Table(name="users")
 public class Users implements UserDetails{
     @Id
@@ -27,7 +29,7 @@ public class Users implements UserDetails{
     private Long id;
 
     @Column(nullable = false)
-    private Date birthday;
+    private LocalDate birthday;
 
     @Column(nullable = false)
     private String password;
@@ -40,9 +42,11 @@ public class Users implements UserDetails{
     private Role role;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonManagedReference("user-profile")
     private Profile profile;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonManagedReference("user-seller")
     private Seller seller;
 
     public String getEmail() {

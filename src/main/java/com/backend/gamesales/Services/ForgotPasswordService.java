@@ -1,7 +1,8 @@
 package com.backend.gamesales.Services;
 
 import com.backend.gamesales.Config.ForgotPasswordProperties;
-import com.backend.gamesales.Dto.Records.MailBody;
+import com.backend.gamesales.Infrastructure.EmailSender;
+import com.backend.gamesales.Infrastructure.MailBody;
 import com.backend.gamesales.Model.ForgotPassword;
 import com.backend.gamesales.Model.Users;
 import com.backend.gamesales.Repository.ForgotPasswordRepository;
@@ -21,7 +22,7 @@ public class ForgotPasswordService {
     private final ForgotPasswordRepository forgotPasswordRepository;
     private final UsersRepository usersRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EmailService emailService;
+    private final EmailSender emailSender;
     private final ForgotPasswordProperties forgotPasswordProperties;
 
 
@@ -66,7 +67,7 @@ public class ForgotPasswordService {
         forgotPassword.setLastRequestDate(now);
 
         forgotPasswordRepository.save(forgotPassword);
-        emailService.sendSimpleMessage(new MailBody(
+        this.emailSender.sendSimpleMessage(new MailBody(
                 email,
                 "Recuperación de contraseña - GameSales",
                 "Tu código OTP es: " + otp + "\n\nExpira en 10 minutos."
@@ -111,7 +112,7 @@ public class ForgotPasswordService {
 
         user.setPassword(passwordEncoder.encode(newPassword));
         usersRepository.save(user);
-        emailService.sendSimpleMessage(new MailBody(
+        this.emailSender.sendSimpleMessage(new MailBody(
                 email,
                 "Contraseña actualizada - GameSales",
                 "Hola,\n\nTu contraseña fue actualizada exitosamente.\n\n" +

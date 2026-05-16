@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.aspectj.apache.bcel.generic.Tag;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
@@ -25,7 +26,7 @@ public class Game {
     @Column(nullable=false)
     private String title;
     @Column(nullable=false)
-    private Double price;
+    private BigDecimal price;
 
     @Column(nullable=false)
     private LocalDate releaseDate;
@@ -42,6 +43,7 @@ public class Game {
     @Enumerated(EnumType.STRING)
     private CategoryGame categoryGame;
     @Column(name = "active", nullable = false, columnDefinition = "boolean default true")
+    @Builder.Default
     private boolean active = true;
 
 

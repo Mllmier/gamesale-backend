@@ -62,7 +62,7 @@ public class JwtService {
                 .signWith(getSignInKey())
                 .compact();
     }
-         public String generateToken(UserDetails userDetails){
+    public String generateToken(UserDetails userDetails){
         return generateToken(new HashMap<>(),userDetails);
     }
 
